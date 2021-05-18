@@ -89,8 +89,7 @@ ssize_t mockFillInBuf (int sock, char* ccinbuf, size_t& ccinbufsize)
 	if (ret == 0)
 	{
 		// connection closed
-		// nothing is read
-		return 0;
+		return -1;
 	}
 
 	if (ret == -1)
@@ -98,20 +97,16 @@ ssize_t mockFillInBuf (int sock, char* ccinbuf, size_t& ccinbufsize)
 		if (errno != EAGAIN)
 		{
 			fprintf(stderr, MOCK "ClientContext::(read/peek fd=%i): filling buffer for %zd bytes: %s\n", sock, maxread, strerror(errno));
-            // error
 			return -1;
 		}
 		ret = 0;
 	}
-
 	ccinbufsize += ret;
 	return ret;
 }
 
 ssize_t mockPeekBytes (int sock, char* dst, size_t usersize, int timeout_ms, char* ccinbuf, size_t& ccinbufsize)
 {
-    // usersize==0: peekAvailable()
-
 	if (usersize > CCBUFSIZE)
 		mockverbose("CCBUFSIZE(%d) should be increased by %zd bytes (-> %zd)\n", CCBUFSIZE, usersize - CCBUFSIZE, usersize);
 
@@ -119,7 +114,7 @@ ssize_t mockPeekBytes (int sock, char* dst, size_t usersize, int timeout_ms, cha
 	size_t retsize = 0;
 	do
 	{
-		if (usersize && usersize <= ccinbufsize)
+		if (usersize <= ccinbufsize)
 		{
 			// data already buffered
 			retsize = usersize;
@@ -128,14 +123,7 @@ ssize_t mockPeekBytes (int sock, char* dst, size_t usersize, int timeout_ms, cha
 		
 		// check incoming data data
 		if (mockFillInBuf(sock, ccinbuf, ccinbufsize) < 0)
-		{
 			return -1;
-	    }
-
-        if (usersize == 0 && ccinbufsize)
-            // peekAvailable
-            return ccinbufsize;
-
 		if (usersize <= ccinbufsize)
 		{
 			// data just received
@@ -191,7 +179,7 @@ ssize_t mockWrite (int sock, const uint8_t* data, size_t size, int timeout_ms)
 #endif
 			if (ret == -1)
 			{
-				fprintf(stderr, MOCK "ClientContext::write/send(%d): %s\n", sock, strerror(errno));
+				fprintf(stderr, MOCK "ClientContext::read: write(%d): %s\n", sock, strerror(errno));
 				return -1;
 			}
 			sent += ret;
@@ -199,8 +187,6 @@ ssize_t mockWrite (int sock, const uint8_t* data, size_t size, int timeout_ms)
 				fprintf(stderr, MOCK "ClientContext::write: sent %d bytes (%zd / %zd)\n", ret, sent, size);
 		}
 	}
-#ifdef DEBUG_ESP_WIFI
-    mockverbose(MOCK "ClientContext::write: total sent %zd bytes\n", sent);
-#endif
+	fprintf(stderr, MOCK "ClientContext::write: total sent %zd bytes\n", sent);
 	return sent;
 }

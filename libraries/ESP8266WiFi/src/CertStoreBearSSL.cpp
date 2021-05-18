@@ -21,7 +21,7 @@
 #include <memory>
 
 
-#if defined(DEBUG_ESP_SSL) && defined(DEBUG_ESP_PORT)
+#ifdef DEBUG_ESP_SSL
 #define DEBUG_BSSL(fmt, ...)  DEBUG_ESP_PORT.printf_P((PGM_P)PSTR( "BSSL:" fmt), ## __VA_ARGS__)
 #else
 #define DEBUG_BSSL(...)
@@ -50,13 +50,9 @@ CertStore::CertInfo CertStore::_preprocessCert(uint32_t length, uint32_t offset,
   memset(&ci, 0, sizeof(ci));
 
   // Process it using SHA256, same as the hashed_dn
-  br_x509_decoder_context *ctx = new (std::nothrow) br_x509_decoder_context;
-  br_sha256_context *sha256 = new (std::nothrow) br_sha256_context;
+  br_x509_decoder_context *ctx = new br_x509_decoder_context;
+  br_sha256_context *sha256 = new br_sha256_context;
   if (!ctx || !sha256) {
-    if (ctx)
-      delete ctx;
-    if (sha256)
-      delete sha256;
     DEBUG_BSSL("CertStore::_preprocessCert: OOM\n");
     return ci;
   }
@@ -80,7 +76,7 @@ CertStore::CertInfo CertStore::_preprocessCert(uint32_t length, uint32_t offset,
 
 // The certs.ar file is a UNIX ar format file, concatenating all the 
 // individual certificates into a single blob in a space-efficient way.
-int CertStore::initCertStore(fs::FS &fs, const char *indexFileName, const char *dataFileName) {
+int CertStore::initCertStore(FS &fs, const char *indexFileName, const char *dataFileName) {
   int count = 0;
   uint32_t offset = 0;
 
@@ -101,12 +97,12 @@ int CertStore::initCertStore(fs::FS &fs, const char *indexFileName, const char *
   memcpy_P(_indexName, indexFileName, strlen_P(indexFileName) + 1);
   memcpy_P(_dataName, dataFileName, strlen_P(dataFileName) + 1);
 
-  fs::File index = _fs->open(_indexName, "w");
+  File index = _fs->open(_indexName, "w");
   if (!index) {
     return 0;
   }
 
-  fs::File data = _fs->open(_dataName, "r");
+  File data = _fs->open(_dataName, "r");
   if (!data) {
     index.close();
     return 0;
@@ -125,7 +121,7 @@ int CertStore::initCertStore(fs::FS &fs, const char *indexFileName, const char *
     uint8_t fileHeader[60];
     // 0..15 = filename in ASCII
     // 48...57 = length in decimal ASCII
-    int32_t length;
+    uint32_t length;
     if (data.read(fileHeader, sizeof(fileHeader)) != sizeof(fileHeader)) {
       break;
     }
@@ -179,7 +175,7 @@ const br_x509_trust_anchor *CertStore::findHashedTA(void *ctx, void *hashed_dn, 
     return nullptr;
   }
 
-  fs::File index = cs->_fs->open(cs->_indexName, "r");
+  File index = cs->_fs->open(cs->_indexName, "r");
   if (!index) {
     return nullptr;
   }
@@ -191,22 +187,22 @@ const br_x509_trust_anchor *CertStore::findHashedTA(void *ctx, void *hashed_dn, 
       if (!der) {
         return nullptr;
       }
-      fs::File data = cs->_fs->open(cs->_dataName, "r");
+      File data = cs->_fs->open(cs->_dataName, "r");
       if (!data) {
         free(der);
         return nullptr;
       }
-      if (!data.seek(ci.offset, fs::SeekSet)) {
+      if (!data.seek(ci.offset, SeekSet)) {
         data.close();
         free(der);
         return nullptr;
       }
-      if (data.read(der, ci.length) != (int)ci.length) {
+      if (data.read((uint8_t *)der, ci.length) != ci.length) {
         free(der);
         return nullptr;
       }
       data.close();
-      cs->_x509 = new (std::nothrow) X509List(der, ci.length);
+      cs->_x509 = new X509List(der, ci.length);
       free(der);
       if (!cs->_x509) {
         DEBUG_BSSL("CertStore::findHashedTA: OOM\n");

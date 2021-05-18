@@ -24,8 +24,6 @@ X509List	KEYWORD1
 PrivateKey	KEYWORD1
 PublicKey	KEYWORD1
 Session	KEYWORD1
-ServerSession	KEYWORD1
-ServerSessions	KEYWORD1
 ESP8266WiFiGratuitous	KEYWORD1
 
 
@@ -56,8 +54,6 @@ enableSTA	KEYWORD2
 enableAP	KEYWORD2
 forceSleepBegin	KEYWORD2
 forceSleepWake	KEYWORD2
-shutdown	KEYWORD2
-resumeFromShutdown	KEYWORD2
 
 #ESP8266WiFi
 printDiag	KEYWORD2
@@ -158,7 +154,6 @@ loadCertificate	KEYWORD2
 loadPrivateKey	KEYWORD2
 loadCACert	KEYWORD2
 allowSelfSignedCerts	KEYWORD2
-setSSLVersion	KEYWORD2
 
 #WiFiServer
 hasClient	KEYWORD2
@@ -196,13 +191,9 @@ getMFLNStatus	KEYWORD2
 setRSACert	KEYWORD2
 setECCert	KEYWORD2
 setClientTrustAnchor	KEYWORD2
-setCache	KEYWORD2
 
 #CertStoreBearSSL
 initCertStore	KEYWORD2
-
-#ServerSessions
-size    KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

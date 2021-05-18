@@ -27,10 +27,9 @@
 #include "ESP8266WiFiType.h"
 #include "ESP8266WiFiGeneric.h"
 #include "user_interface.h"
-#include "LwipIntf.h"
 
 
-class ESP8266WiFiSTAClass: public LwipIntf {
+class ESP8266WiFiSTAClass {
         // ----------------------------------------------------------------------------------------------
         // ---------------------------------------- STA function ----------------------------------------
         // ----------------------------------------------------------------------------------------------
@@ -70,7 +69,10 @@ class ESP8266WiFiSTAClass: public LwipIntf {
         IPAddress gatewayIP();
         IPAddress dnsIP(uint8_t dns_no = 0);
 
-        IPAddress broadcastIP();
+        String hostname();
+        bool hostname(const String& aHostname) { return hostname(aHostname.c_str()); }
+        bool hostname(const char* aHostname);
+
         // STA WiFi info
         wl_status_t status();
         String SSID() const;
@@ -79,7 +81,7 @@ class ESP8266WiFiSTAClass: public LwipIntf {
         uint8_t * BSSID();
         String BSSIDstr();
 
-        int8_t RSSI();
+        int32_t RSSI();
 
         static void enableInsecureWEP (bool enable = true) { _useInsecureWEP = enable; }
 

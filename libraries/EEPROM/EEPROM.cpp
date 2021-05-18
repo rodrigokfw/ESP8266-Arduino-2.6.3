@@ -35,11 +35,17 @@ extern "C" uint32_t _EEPROM_start;
 
 EEPROMClass::EEPROMClass(uint32_t sector)
 : _sector(sector)
+, _data(0)
+, _size(0)
+, _dirty(false)
 {
 }
 
 EEPROMClass::EEPROMClass(void)
 : _sector((((uint32_t)&_EEPROM_start - 0x40200000) / SPI_FLASH_SEC_SIZE))
+, _data(0)
+, _size(0)
+, _dirty(false)
 {
 }
 
@@ -72,22 +78,17 @@ void EEPROMClass::begin(size_t size) {
   _dirty = false; //make sure dirty is cleared in case begin() is called 2nd+ time
 }
 
-bool EEPROMClass::end() {
-  bool retval;
+void EEPROMClass::end() {
+  if (!_size)
+    return;
 
-  if(!_size) {
-    return false;
-  }
-
-  retval = commit();
+  commit();
   if(_data) {
     delete[] _data;
   }
   _data = 0;
   _size = 0;
   _dirty = false;
-
-  return retval;
 }
 
 
@@ -110,7 +111,7 @@ void EEPROMClass::write(int const address, uint8_t const value) {
     return;
   }
   if(!_data) {
-    DEBUGV("EEPROMClass::write without ::begin\n");
+    DEBUGV("EEPROMClass::read without ::begin\n");
     return;
   }
 

@@ -44,8 +44,6 @@ void setup() {
 }
 
 void loop() {
-  static bool wait = false;
-
   Serial.print("connecting to ");
   Serial.print(host);
   Serial.print(':');
@@ -89,8 +87,5 @@ void loop() {
   Serial.println("closing connection");
   client.stop();
 
-  if (wait) {
-    delay(300000); // execute once every 5 minutes, don't flood remote service
-  }
-  wait = true;
+  delay(300000); // execute once every 5 minutes, don't flood remote service
 }

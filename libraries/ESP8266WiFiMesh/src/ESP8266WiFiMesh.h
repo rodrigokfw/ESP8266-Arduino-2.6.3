@@ -18,28 +18,6 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-
-
-
-
-
-
-/********************************************************************************************
-* NOTE!
-*
-* This class is deprecated and will be removed in core version 3.0.0.
-* If you are still using this class, please consider migrating to the new API shown in 
-* the EspnowMeshBackend.h or TcpIpMeshBackend.h source files.
-*
-* TODO: delete this file.
-********************************************************************************************/
-
-
-
-
-
-
-
 #ifndef __WIFIMESH_H__
 #define __WIFIMESH_H__
 
@@ -47,9 +25,11 @@
 #include <WiFiServer.h>
 #include <functional>
 #include <vector>
-#include "TransmissionResult.h"
 #include "NetworkInfo.h"
+#include "TransmissionResult.h"
 
+#define ENABLE_STATIC_IP_OPTIMIZATION // Requires Arduino core for ESP8266 version 2.4.2 or higher and lwIP2 (lwIP can be changed in "Tools" menu of Arduino IDE).
+#define ENABLE_WIFI_SCAN_OPTIMIZATION // Requires Arduino core for ESP8266 version 2.4.2 or higher. Scan time should go from about 2100 ms to around 60 ms if channel 1 (standard) is used.
 
 const String WIFI_MESH_EMPTY_STRING = "";
 
@@ -64,6 +44,8 @@ private:
   uint8 _meshWiFiChannel;
   bool _verboseMode;
   WiFiServer _server;
+  uint32_t _lwipVersion[3];
+  static const uint32_t lwipVersion203Signature[3];
   String _message = WIFI_MESH_EMPTY_STRING;
   bool _scanHidden = false;
   bool _apHidden = false;
@@ -74,7 +56,6 @@ private:
 
   static String lastSSID;
   static bool staticIPActivated;
-  bool useStaticIP;
   static IPAddress staticIP;
   static IPAddress gateway;
   static IPAddress subnetMask;
@@ -97,6 +78,8 @@ private:
   bool waitForClientTransmission(WiFiClient &currClient, uint32_t maxWait);
   transmission_status_t attemptDataTransfer();
   transmission_status_t attemptDataTransferKernel();
+  void storeLwipVersion();
+  bool atLeastLwipVersion(const uint32_t minLwipVersion[3]);
   
   
   
@@ -150,7 +133,7 @@ public:
   ////////////////////////////</DEPRECATED> TODO: REMOVE IN 2.5.0////////////////////////////
 
   ~ESP8266WiFiMesh();
-
+  
   /**
    * WiFiMesh Constructor method. Creates a WiFi Mesh Node, ready to be initialised.
    *
@@ -176,7 +159,7 @@ public:
    */
   ESP8266WiFiMesh(requestHandlerType requestHandler, responseHandlerType responseHandler, networkFilterType networkFilter, 
                   const String &meshPassword, const String &meshName = "MeshNode_", const String &nodeID = WIFI_MESH_EMPTY_STRING, bool verboseMode = false, 
-                  uint8 meshWiFiChannel = 1, uint16_t serverPort = 4011) __attribute__((deprecated));
+                  uint8 meshWiFiChannel = 1, uint16_t serverPort = 4011);
   
   /** 
   * A vector that contains the NetworkInfo for each WiFi network to connect to. 
@@ -195,7 +178,7 @@ public:
   static std::vector<TransmissionResult> latestTransmissionOutcomes;
 
   /**
-   * @return True if latest transmission was successful (i.e. latestTransmissionOutcomes is not empty and all entries have transmissionStatus TS_TRANSMISSION_COMPLETE). False otherwise.
+   * @returns True if latest transmission was successful (i.e. latestTransmissionOutcomes is not empty and all entries have transmissionStatus TS_TRANSMISSION_COMPLETE). False otherwise.
    */
   static bool latestTransmissionSuccessful();
 
@@ -218,7 +201,7 @@ public:
    * If another instance takes control over the AP after the pointer is created,
    * the created pointer will still point to the old AP instance.
    * 
-   * @return A pointer to the ESP8266WiFiMesh instance currently in control of the ESP8266 AP,
+   * @returns A pointer to the ESP8266WiFiMesh instance currently in control of the ESP8266 AP,
    *          or nullptr if there is no active AP controller.
    */
   static ESP8266WiFiMesh * getAPController();
@@ -226,7 +209,7 @@ public:
   /**
    * Check if this ESP8266WiFiMesh instance is in control of the ESP8266 AP.
    * 
-   * @return True if this ESP8266WiFiMesh instance is in control of the ESP8266 AP. False otherwise.
+   * @returns True if this ESP8266WiFiMesh instance is in control of the ESP8266 AP. False otherwise.
    */
   bool isAPController();
 

@@ -16,7 +16,7 @@ try:
     sys.path.insert(0, toolspath + "/pyserial") # Add pyserial dir to search path
     sys.path.insert(0, toolspath + "/esptool") # Add esptool dir to search path
     import esptool # If this fails, we can't continue and will bomb below
-except Exception:
+except:
     sys.stderr.write("pyserial or esptool directories not found next to this upload.py tool.\n")
     sys.exit(1)
 
@@ -51,7 +51,6 @@ while len(sys.argv):
 cmdline = cmdline + ['write_flash']
 if len(write_option):
     cmdline = cmdline + [write_option]
-cmdline = cmdline + ['--flash_size', 'detect']
 cmdline = cmdline + [write_addr, binary]
 
 erase_file = ''

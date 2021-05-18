@@ -123,8 +123,11 @@ void setup(void) {
   });
 
   server.onNotFound(handleNotFound);
+  //here the list of headers to be recorded
+  const char * headerkeys[] = {"User-Agent", "Cookie"} ;
+  size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
   //ask server to track these headers
-  server.collectHeaders("User-Agent", "Cookie");
+  server.collectHeaders(headerkeys, headerkeyssize);
   server.begin();
   Serial.println("HTTP server started");
 }

@@ -24,7 +24,7 @@
 
 extern "C"
 {
-    #include "wl_definitions.h"
+    #include "include/wl_definitions.h"
     #include "osapi.h"
     #include "ets_sys.h"
 }
@@ -40,7 +40,6 @@ extern "C"
 #include "lwip/netif.h"
 #include <include/ClientContext.h>
 #include "c_types.h"
-#include <StreamDev.h>
 
 uint16_t WiFiClient::_localPort = 0;
 
@@ -146,6 +145,17 @@ int WiFiClient::connect(IPAddress ip, uint16_t port)
         _client = nullptr;
     }
 
+#if LWIP_VERSION_MAJOR == 1
+    // if the default interface is down, tcp_connect exits early without
+    // ever calling tcp_err
+    // http://lists.gnu.org/archive/html/lwip-devel/2010-05/msg00001.html
+    netif* interface = ip_route(ip);
+    if (!interface) {
+        DEBUGV("no route to host\r\n");
+        return 0;
+    }
+#endif
+
     tcp_pcb* pcb = tcp_new();
     if (!pcb)
         return 0;
@@ -196,7 +206,7 @@ bool WiFiClient::getSync() const
     return _client->getSync();
 }
 
-int WiFiClient::availableForWrite ()
+size_t WiFiClient::availableForWrite ()
 {
     return _client? _client->availableForWrite(): 0;
 }
@@ -213,19 +223,23 @@ size_t WiFiClient::write(const uint8_t *buf, size_t size)
         return 0;
     }
     _client->setTimeout(_timeout);
-    return _client->write((const char*)buf, size);
+    return _client->write(buf, size);
+}
+
+size_t WiFiClient::write(Stream& stream, size_t unused)
+{
+    (void) unused;
+    return WiFiClient::write(stream);
 }
 
 size_t WiFiClient::write(Stream& stream)
 {
-    // (this method is deprecated)
-
     if (!_client || !stream.available())
     {
         return 0;
     }
-    // core up to 2.7.4 was equivalent to this
-    return stream.sendAll(this);
+    _client->setTimeout(_timeout);
+    return _client->write(stream);
 }
 
 size_t WiFiClient::write_P(PGM_P buf, size_t size)
@@ -235,14 +249,13 @@ size_t WiFiClient::write_P(PGM_P buf, size_t size)
         return 0;
     }
     _client->setTimeout(_timeout);
-    StreamConstPtr nopeek(buf, size);
-    return nopeek.sendAll(this);
+    return _client->write_P(buf, size);
 }
 
 int WiFiClient::available()
 {
     if (!_client)
-        return 0;
+        return false;
 
     int result = _client->getSize();
 
@@ -260,14 +273,10 @@ int WiFiClient::read()
     return _client->read();
 }
 
+
 int WiFiClient::read(uint8_t* buf, size_t size)
 {
-    return (int)_client->read((char*)buf, size);
-}
-
-int WiFiClient::read(char* buf, size_t size)
-{
-    return (int)_client->read(buf, size);
+    return (int) _client->read(reinterpret_cast<char*>(buf), size);
 }
 
 int WiFiClient::peek()
@@ -306,7 +315,7 @@ bool WiFiClient::flush(unsigned int maxWaitMs)
 
     if (maxWaitMs == 0)
         maxWaitMs = WIFICLIENT_MAX_FLUSH_WAIT_MS;
-    return _client->wait_until_acked(maxWaitMs);
+    return _client->wait_until_sent(maxWaitMs);
 }
 
 bool WiFiClient::stop(unsigned int maxWaitMs)
@@ -413,29 +422,4 @@ uint16_t WiFiClient::getKeepAliveInterval () const
 uint8_t WiFiClient::getKeepAliveCount () const
 {
     return _client->getKeepAliveCount();
-}
-
-bool WiFiClient::hasPeekBufferAPI () const
-{
-    return true;
-}
-
-// return a pointer to available data buffer (size = peekAvailable())
-// semantic forbids any kind of read() before calling peekConsume()
-const char* WiFiClient::peekBuffer ()
-{
-    return _client? _client->peekBuffer(): nullptr;
-}
-
-// return number of byte accessible by peekBuffer()
-size_t WiFiClient::peekAvailable ()
-{
-    return _client? _client->peekAvailable(): 0;
-}
-
-// consume bytes after use (see peekBuffer)
-void WiFiClient::peekConsume (size_t consume)
-{
-    if (_client)
-        _client->peekConsume(consume);
 }

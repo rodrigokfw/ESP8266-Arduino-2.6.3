@@ -46,9 +46,6 @@ class UdpContext;
 #define SSDP_MODEL_VERSION_SIZE     32
 #define SSDP_MANUFACTURER_SIZE      64
 #define SSDP_MANUFACTURER_URL_SIZE  128
-#define SSDP_INTERVAL_SECONDS       1200
-#define SSDP_MULTICAST_TTL          2
-#define SSDP_HTTP_PORT              80
 
 typedef enum {
   NONE,
@@ -104,20 +101,20 @@ class SSDPClass{
     void _stopTimer();
     static void _onTimerStatic(SSDPClass* self);
 
-    UdpContext* _server = nullptr;
-    SSDPTimer* _timer = nullptr;
-    uint16_t _port = SSDP_HTTP_PORT;
-    uint8_t _ttl = SSDP_MULTICAST_TTL;
-    uint32_t _interval = SSDP_INTERVAL_SECONDS;
+    UdpContext* _server;
+    SSDPTimer* _timer;
+    uint16_t _port;
+    uint8_t _ttl;
+    uint32_t _interval;
 
     IPAddress _respondToAddr;
-    uint16_t  _respondToPort = 0;
+    uint16_t  _respondToPort;
 
-    bool _pending = false;
-    bool _st_is_uuid = false;
-    unsigned short _delay = 0;
-    unsigned long _process_time = 0;
-    unsigned long _notify_time = 0;
+    bool _pending;
+    bool _st_is_uuid;
+    unsigned short _delay;
+    unsigned long _process_time;
+    unsigned long _notify_time;
 
     char _schemaURL[SSDP_SCHEMA_URL_SIZE];
     char _uuid[SSDP_UUID_SIZE];

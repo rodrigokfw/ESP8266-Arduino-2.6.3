@@ -18,7 +18,6 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <new> // std::nothrow
 #include "cbuf.h"
 #include "c_types.h"
 
@@ -44,7 +43,7 @@ size_t cbuf::resize(size_t newSize) {
         return _size;
     }
 
-    char *newbuf = new (std::nothrow) char[newSize];
+    char *newbuf = new char[newSize];
     char *oldbuf = _buf;
 
     if(!newbuf) {
@@ -67,7 +66,7 @@ size_t cbuf::resize(size_t newSize) {
     return _size;
 }
 
-size_t IRAM_ATTR cbuf::available() const {
+size_t ICACHE_RAM_ATTR cbuf::available() const {
     if(_end >= _begin) {
         return _end - _begin;
     }
@@ -108,7 +107,7 @@ size_t cbuf::peek(char *dst, size_t size) {
     return size_read;
 }
 
-int IRAM_ATTR cbuf::read() {
+int ICACHE_RAM_ATTR cbuf::read() {
     if(empty())
         return -1;
 
@@ -133,7 +132,7 @@ size_t cbuf::read(char* dst, size_t size) {
     return size_read;
 }
 
-size_t IRAM_ATTR cbuf::write(char c) {
+size_t ICACHE_RAM_ATTR cbuf::write(char c) {
     if(full())
         return 0;
 

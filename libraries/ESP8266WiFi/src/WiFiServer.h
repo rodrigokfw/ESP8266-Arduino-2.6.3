@@ -23,7 +23,7 @@
 #define wifiserver_h
 
 extern "C" {
-  #include "wl_definitions.h"
+  #include "include/wl_definitions.h"
 
   struct tcp_pcb;
 }
@@ -70,10 +70,10 @@ class WiFiServer : public Server {
 protected:
   uint16_t _port;
   IPAddress _addr;
-  tcp_pcb* _listen_pcb = nullptr;
+  tcp_pcb* _listen_pcb;
 
-  ClientContext* _unclaimed = nullptr;
-  ClientContext* _discarded = nullptr;
+  ClientContext* _unclaimed;
+  ClientContext* _discarded;
   enum { _ndDefault, _ndFalse, _ndTrue } _noDelay = _ndDefault;
 
 public:

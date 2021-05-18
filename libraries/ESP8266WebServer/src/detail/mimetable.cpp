@@ -62,7 +62,7 @@ const Entry mimeTable[maxType] PROGMEM =
 {
     { kHtmlSuffix, kHtml },
     { kHtmSuffix, kHtml },
-    { kTxtSuffix, kTxt },
+    { kTxtSuffix, kTxtSuffix },
 #ifndef MIMETYPE_MINIMAL
     { kCssSuffix, kCss },
     { kJsSuffix, kJs },

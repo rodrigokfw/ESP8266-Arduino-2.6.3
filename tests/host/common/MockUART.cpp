@@ -407,29 +407,26 @@ uart_uninit(uart_t* uart)
 	free(uart);
 }
 
-bool
+void
 uart_swap(uart_t* uart, int tx_pin)
 {
 	(void) uart;
 	(void) tx_pin;
-	return true;
 }
 
-bool
+void
 uart_set_tx(uart_t* uart, int tx_pin)
 {
 	(void) uart;
 	(void) tx_pin;
-	return true;
 }
 
-bool
+void
 uart_set_pins(uart_t* uart, int tx, int rx)
 {
 	(void) uart;
 	(void) tx;
 	(void) rx;
-	return true;
 }
 
 bool
@@ -494,9 +491,3 @@ uart_detect_baudrate(int uart_nr)
 }
 
 };
-
-
-size_t uart_peek_available (uart_t* uart) { return 0; }
-const char* uart_peek_buffer (uart_t* uart) { return nullptr; }
-void uart_peek_consume (uart_t* uart, size_t consume) { (void)uart; (void)consume; }
-

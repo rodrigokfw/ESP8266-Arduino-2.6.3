@@ -56,7 +56,6 @@ constexpr int HTTP_UE_SERVER_WRONG_HTTP_CODE    = (-104);
 constexpr int HTTP_UE_SERVER_FAULTY_MD5         = (-105);
 constexpr int HTTP_UE_BIN_VERIFY_HEADER_FAILED  = (-106);
 constexpr int HTTP_UE_BIN_FOR_WRONG_FLASH       = (-107);
-constexpr int HTTP_UE_SERVER_UNAUTHORIZED       = (-108);
 
 enum HTTPUpdateResult {
     HTTP_UPDATE_FAILED,
@@ -111,9 +110,6 @@ public:
         _ledPin = ledPin;
         _ledOn = ledOn;
     }
-
-    void setAuthorization(const String& user, const String& password);
-    void setAuthorization(const String& auth);
 
 #if HTTPUPDATE_1_2_COMPATIBLE
     // This function is deprecated, use rebootOnUpdate and the next one instead
@@ -178,13 +174,9 @@ protected:
     int _lastError;
     bool _rebootOnUpdate = true;
     bool _closeConnectionsOnUpdate = true;
-    String _user;
-    String _password;
-    String _auth;
-
 private:
     int _httpClientTimeout;
-    followRedirects_t _followRedirects = HTTPC_DISABLE_FOLLOW_REDIRECTS;
+    followRedirects_t _followRedirects;
 
     // Callbacks
     HTTPUpdateStartCB    _cbStart;
@@ -192,7 +184,7 @@ private:
     HTTPUpdateErrorCB    _cbError;
     HTTPUpdateProgressCB _cbProgress;
 
-    int _ledPin = -1;
+    int _ledPin;
     uint8_t _ledOn;
 };
 

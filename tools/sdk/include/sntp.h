@@ -5,7 +5,11 @@
 
 #include "lwip/init.h"
 #include "lwip/ip_addr.h"
+#if LWIP_VERSION_MAJOR == 1
+#include "lwip/sntp.h"
+#else
 #include "lwip/apps/sntp.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,7 +22,7 @@ uint32 sntp_get_current_timestamp();
 /**
  * get real time (GTM + 8 time zone)
  */
-char* sntp_get_real_time(time_t t);
+char* sntp_get_real_time(long t);
 /**
  * SNTP get time_zone default GMT + 8
  */

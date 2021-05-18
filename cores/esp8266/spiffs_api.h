@@ -26,6 +26,8 @@
  */
 #include <limits>
 #include "FS.h"
+#undef max
+#undef min
 #include "FSImpl.h"
 extern "C" {
     #include "spiffs/spiffs.h"
@@ -388,10 +390,10 @@ public:
         return result;
     }
 
-    int read(uint8_t* buf, size_t size) override
+    size_t read(uint8_t* buf, size_t size) override
     {
         CHECKFD();
-        int result = SPIFFS_read(_fs->getFs(), _fd, (void*) buf, size);
+        auto result = SPIFFS_read(_fs->getFs(), _fd, (void*) buf, size);
         if (result < 0) {
             DEBUGV("SPIFFS_read rc=%d\r\n", result);
             return 0;

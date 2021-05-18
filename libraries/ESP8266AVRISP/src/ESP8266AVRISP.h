@@ -89,8 +89,8 @@ protected:
     void commit(int addr);
     void program_page();
     uint8_t flash_read(uint8_t hilo, int addr);
-    bool flash_read_page(int length);
-    bool eeprom_read_page(int length);
+    void flash_read_page(int length);
+    void eeprom_read_page(int length);
     void read_page();
     void read_signature();
 

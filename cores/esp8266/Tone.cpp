@@ -25,15 +25,14 @@
 #include "core_esp8266_waveform.h"
 #include "user_interface.h"
 
+// Which pins have a tone running on them?
+static uint32_t _toneMap = 0;
+
+
 static void _startTone(uint8_t _pin, uint32_t high, uint32_t low, uint32_t duration) {
   if (_pin > 16) {
     return;
   }
-
-  // Stop any analogWrites (PWM) because they are a different generator
-  _stopPWM(_pin);
-  // If there's another Tone or startWaveform on this pin
-  // it will be changed on-the-fly (no need to stop it)
 
   pinMode(_pin, OUTPUT);
 
@@ -43,7 +42,9 @@ static void _startTone(uint8_t _pin, uint32_t high, uint32_t low, uint32_t durat
   duration = microsecondsToClockCycles(duration * 1000UL);
   duration += high + low - 1;
   duration -= duration % (high + low);
-  startWaveformClockCycles(_pin, high, low, duration);
+  if (startWaveformClockCycles(_pin, high, low, duration)) {
+    _toneMap |= 1 << _pin;
+  }
 }
 
 
@@ -85,5 +86,6 @@ void noTone(uint8_t _pin) {
     return;
   }
   stopWaveform(_pin);
+  _toneMap &= ~(1 << _pin);
   digitalWrite(_pin, 0);
 }

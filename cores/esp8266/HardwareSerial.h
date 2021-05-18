@@ -101,31 +101,31 @@ public:
         return uart_get_rx_buffer_size(_uart);
     }
 
-    bool swap()
+    void swap()
     {
-        return swap(1);
+        swap(1);
     }
-    bool swap(uint8_t tx_pin)    //toggle between use of GPIO13/GPIO15 or GPIO3/GPIO(1/2) as RX and TX
+    void swap(uint8_t tx_pin)    //toggle between use of GPIO13/GPIO15 or GPIO3/GPIO(1/2) as RX and TX
     {
-        return uart_swap(_uart, tx_pin);
+        uart_swap(_uart, tx_pin);
     }
 
     /*
      * Toggle between use of GPIO1 and GPIO2 as TX on UART 0.
      * Note: UART 1 can't be used if GPIO2 is used with UART 0!
      */
-    bool set_tx(uint8_t tx_pin)
+    void set_tx(uint8_t tx_pin)
     {
-        return uart_set_tx(_uart, tx_pin);
+        uart_set_tx(_uart, tx_pin);
     }
 
     /*
      * UART 0 possible options are (1, 3), (2, 3) or (15, 13)
      * UART 1 allows only TX on 2 if UART 0 is not (2, 3)
      */
-    bool pins(uint8_t tx, uint8_t rx)
+    void pins(uint8_t tx, uint8_t rx)
     {
-        return uart_set_pins(_uart, tx, rx);
+        uart_set_pins(_uart, tx, rx);
     }
 
     int available(void) override;
@@ -135,51 +135,22 @@ public:
         // return -1 when data is unvailable (arduino api)
         return uart_peek_char(_uart);
     }
-
-    virtual bool hasPeekBufferAPI () const override
-    {
-        return true;
-    }
-
-    // return a pointer to available data buffer (size = available())
-    // semantic forbids any kind of read() before calling peekConsume()
-    const char* peekBuffer () override
-    {
-        return uart_peek_buffer(_uart);
-    }
-
-    // return number of byte accessible by peekBuffer()
-    size_t peekAvailable () override
-    {
-        return uart_peek_available(_uart);
-    }
-
-    // consume bytes after use (see peekBuffer)
-    void peekConsume (size_t consume) override
-    {
-        return uart_peek_consume(_uart, consume);
-    }
-
     int read(void) override
     {
         // return -1 when data is unvailable (arduino api)
         return uart_read_char(_uart);
     }
     // ::read(buffer, size): same as readBytes without timeout
-    int read(char* buffer, size_t size)
+    size_t read(char* buffer, size_t size)
     {
         return uart_read(_uart, buffer, size);
-    }
-    int read(uint8_t* buffer, size_t size) override
-    {
-        return uart_read(_uart, (char*)buffer, size);
     }
     size_t readBytes(char* buffer, size_t size) override;
     size_t readBytes(uint8_t* buffer, size_t size) override
     {
         return readBytes((char*)buffer, size);
     }
-    int availableForWrite(void) override
+    int availableForWrite(void)
     {
         return static_cast<int>(uart_tx_free(_uart));
     }
@@ -235,7 +206,5 @@ protected:
 
 extern HardwareSerial Serial;
 extern HardwareSerial Serial1;
-
-extern void serialEventRun(void) __attribute__((weak));
 
 #endif

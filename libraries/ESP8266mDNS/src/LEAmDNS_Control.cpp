@@ -37,7 +37,6 @@ extern "C" {
 #include "user_interface.h"
 }
 
-#include "ESP8266mDNS.h"
 #include "LEAmDNS_lwIPdefs.h"
 #include "LEAmDNS_Priv.h"
 
@@ -85,8 +84,10 @@ bool MDNSResponder::_process(bool p_bUserContext)
     }
     else
     {
-        bResult =  _updateProbeStatus() &&              // Probing
-                   _checkServiceQueryCache();           // Service query cache check
+        bResult = (m_netif != nullptr) &&
+                  (m_netif->flags & NETIF_FLAG_UP) &&  // network interface is up and running
+                  _updateProbeStatus() &&              // Probing
+                  _checkServiceQueryCache();           // Service query cache check
     }
     return bResult;
 }
@@ -97,9 +98,12 @@ bool MDNSResponder::_process(bool p_bUserContext)
 bool MDNSResponder::_restart(void)
 {
 
-    return ((_resetProbeStatus(true/*restart*/)) &&  // Stop and restart probing
-            (_allocUDPContext()));                   // Restart UDP
+    return ((m_netif != nullptr) &&
+            (m_netif->flags & NETIF_FLAG_UP) &&  // network interface is up and running
+            (_resetProbeStatus(true)) &&         // Stop and restart probing
+            (_allocUDPContext()));               // Restart UDP
 }
+
 
 /**
     RECEIVING
@@ -187,7 +191,8 @@ bool MDNSResponder::_parseQuery(const MDNSResponder::stcMDNS_MsgHeader& p_MsgHea
         {
             // Define host replies, BUT only answer queries after probing is done
             u8HostOrServiceReplies =
-                sendParameter.m_u8HostReplyMask |= (((ProbingStatus_Done == m_HostProbeInformation.m_ProbingStatus))
+                sendParameter.m_u8HostReplyMask |= (((m_bPassivModeEnabled) ||
+                                                    (ProbingStatus_Done == m_HostProbeInformation.m_ProbingStatus))
                                                     ? _replyMaskForHost(questionRR.m_Header, 0)
                                                     : 0);
             DEBUG_EX_INFO(if (u8HostOrServiceReplies)
@@ -216,7 +221,8 @@ bool MDNSResponder::_parseQuery(const MDNSResponder::stcMDNS_MsgHeader& p_MsgHea
             for (stcMDNSService* pService = m_pServices; pService; pService = pService->m_pNext)
             {
                 // Define service replies, BUT only answer queries after probing is done
-                uint8_t u8ReplyMaskForQuestion = (((ProbingStatus_Done == pService->m_ProbeInformation.m_ProbingStatus))
+                uint8_t u8ReplyMaskForQuestion = (((m_bPassivModeEnabled) ||
+                                                   (ProbingStatus_Done == pService->m_ProbeInformation.m_ProbingStatus))
                                                   ? _replyMaskForService(questionRR.m_Header, *pService, 0)
                                                   : 0);
                 u8HostOrServiceReplies |= (pService->m_u8ReplyMask |= u8ReplyMaskForQuestion);
@@ -357,8 +363,9 @@ bool MDNSResponder::_parseQuery(const MDNSResponder::stcMDNS_MsgHeader& p_MsgHea
                         // IP4 address was asked for
 #ifdef MDNS_IP4_SUPPORT
                         if ((AnswerType_A == pKnownRRAnswer->answerType()) &&
-                                (((stcMDNS_RRAnswerA*)pKnownRRAnswer)->m_IPAddress == m_pUDPContext->getInputNetif()->ip_addr))
+                                (((stcMDNS_RRAnswerA*)pKnownRRAnswer)->m_IPAddress == _getResponseMulticastInterface()))
                         {
+
                             DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(PSTR("[MDNSResponder] _parseQuery: IP4 address already known... skipping!\n")););
                             sendParameter.m_u8HostReplyMask &= ~ContentFlag_A;
                         }   // else: RData NOT IP4 length !!
@@ -391,8 +398,7 @@ bool MDNSResponder::_parseQuery(const MDNSResponder::stcMDNS_MsgHeader& p_MsgHea
 #ifdef MDNS_IP4_SUPPORT
                         if (AnswerType_A == pKnownRRAnswer->answerType())
                         {
-
-                            IPAddress localIPAddress(m_pUDPContext->getInputNetif()->ip_addr);
+                            IPAddress   localIPAddress(_getResponseMulticastInterface());
                             if (((stcMDNS_RRAnswerA*)pKnownRRAnswer)->m_IPAddress == localIPAddress)
                             {
                                 // SAME IP address -> We've received an old message from ourselfs (same IP)
@@ -1214,7 +1220,9 @@ bool MDNSResponder::_updateProbeStatus(void)
 
     //
     // Probe host domain
-    if (ProbingStatus_ReadyToStart == m_HostProbeInformation.m_ProbingStatus)
+    if ((ProbingStatus_ReadyToStart == m_HostProbeInformation.m_ProbingStatus) &&                   // Ready to get started AND
+            //TODO: Fix the following to allow Ethernet shield or other interfaces
+            (_getResponseMulticastInterface() != IPAddress()))                // Has IP address
     {
         DEBUG_EX_INFO(DEBUG_OUTPUT.printf_P(PSTR("[MDNSResponder] _updateProbeStatus: Starting host probing...\n")););
 
@@ -1974,7 +1982,7 @@ bool MDNSResponder::_checkServiceQueryCache(void)
 /*
     MDNSResponder::_replyMaskForHost
 
-    Determines the relevant host answers for the given question.
+    Determines the relavant host answers for the given question.
     - A question for the hostname (eg. esp8266.local) will result in an A/AAAA (eg. 192.168.2.129) reply.
     - A question for the reverse IP address (eg. 192-168.2.120.inarpa.arpa) will result in an PTR_IP4 (eg. esp8266.local) reply.
 
@@ -1998,17 +2006,11 @@ uint8_t MDNSResponder::_replyMaskForHost(const MDNSResponder::stcMDNS_RRHeader& 
             // PTR request
 #ifdef MDNS_IP4_SUPPORT
             stcMDNS_RRDomain    reverseIP4Domain;
-            for (netif* pNetIf = netif_list; pNetIf; pNetIf = pNetIf->next)
+            if ((_buildDomainForReverseIP4(_getResponseMulticastInterface(), reverseIP4Domain)) &&
+                    (p_RRHeader.m_Domain == reverseIP4Domain))
             {
-                if (netif_is_up(pNetIf))
-                {
-                    if ((_buildDomainForReverseIP4(pNetIf->ip_addr, reverseIP4Domain)) &&
-                            (p_RRHeader.m_Domain == reverseIP4Domain))
-                    {
-                        // Reverse domain match
-                        u8ReplyMask |= ContentFlag_PTR_IP4;
-                    }
-                }
+                // Reverse domain match
+                u8ReplyMask |= ContentFlag_PTR_IP4;
             }
 #endif
 #ifdef MDNS_IP6_SUPPORT

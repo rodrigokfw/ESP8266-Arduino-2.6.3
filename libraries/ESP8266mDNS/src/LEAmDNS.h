@@ -14,7 +14,7 @@
     - Presenting a DNS-SD service to interested observers, eg. a http server by presenting _http._tcp service
     - Support for multi-level compressed names in input; in output only a very simple one-leven full-name compression is implemented
     - Probing host and service domains for uniqueness in the local network
-    - Tiebreaking while probing is supported in a very minimalistic way (the 'higher' IP address wins the tiebreak)
+    - Tiebreaking while probing is supportet in a very minimalistic way (the 'higher' IP address wins the tiebreak)
     - Announcing available services after successful probing
     - Using fixed service TXT items or
     - Using dynamic service TXT items for presented services (via callback)
@@ -130,9 +130,8 @@ namespace MDNSImplementation
 #endif
 
 #define MDNS_IP4_SUPPORT
-#if LWIP_IPV6
 //#define MDNS_IP6_SUPPORT
-#endif
+
 
 #ifdef MDNS_IP4_SUPPORT
 #define MDNS_IP4_SIZE               4
@@ -165,10 +164,6 @@ namespace MDNSImplementation
 */
 #define MDNS_QUERYSERVICES_WAIT_TIME    1000
 
-/*
-    Timeout for udpContext->sendtimeout()
-*/
-#define MDNS_UDPCONTEXT_TIMEOUT  50
 
 /**
     MDNSResponder
@@ -177,7 +172,6 @@ class MDNSResponder
 {
 public:
     /* INTERFACE */
-
     MDNSResponder(void);
     virtual ~MDNSResponder(void);
 
@@ -190,8 +184,6 @@ public:
     {
         return begin(p_strHostname.c_str(), p_IPAddress, p_u32TTL);
     }
-    bool _joinMulticastGroups(void);
-    bool _leaveMulticastGroups(void);
 
     // Finish MDNS processing
     bool close(void);
@@ -1191,7 +1183,6 @@ protected:
         ~stcMDNSSendParameter(void);
 
         bool clear(void);
-        bool clearCachedNames(void);
 
         bool shiftOffset(uint16_t p_u16Shift);
 
@@ -1207,8 +1198,12 @@ protected:
     UdpContext*                     m_pUDPContext;
     char*                           m_pcHostname;
     stcMDNSServiceQuery*            m_pServiceQueries;
+    WiFiEventHandler                m_DisconnectedHandler;
+    WiFiEventHandler                m_GotIPHandler;
     MDNSDynamicServiceTxtCallbackFunc m_fnServiceTxtCallback;
+    bool                            m_bPassivModeEnabled;
     stcProbeInformation             m_HostProbeInformation;
+    CONST netif*                    m_netif; // network interface to run on
 
     /** CONTROL **/
     /* MAINTENANCE */
@@ -1262,6 +1257,11 @@ protected:
     bool _sendMDNSQuery(const stcMDNS_RRDomain& p_QueryDomain,
                         uint16_t p_u16QueryType,
                         stcMDNSServiceQuery::stcAnswer* p_pKnownAnswers = 0);
+
+    const IPAddress _getResponseMulticastInterface() const
+    {
+        return IPAddress(m_netif->ip_addr);
+    }
 
     uint8_t _replyMaskForHost(const stcMDNS_RRHeader& p_RRHeader,
                               bool* p_pbFullNameMatch = 0) const;

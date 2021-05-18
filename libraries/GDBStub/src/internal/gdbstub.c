@@ -445,7 +445,7 @@ static inline int gdbHandleCommand() {
 					writeByte(i, gdbGetHexVal(&data, 8));
 				}
 				//Make sure caches are up-to-date. Procedure according to Xtensa ISA document, ISYNC inst desc.
-				__asm__ __volatile__ ("ISYNC\nISYNC\n");
+				asm volatile("ISYNC\nISYNC\n");
 				gdbSendPacketOK();
 			} else {
 				//Trying to do a software breakpoint on a flash proc, perhaps?
