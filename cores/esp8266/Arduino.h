@@ -134,7 +134,7 @@ void timer0_detachInterrupt(void);
 
 #define abs(x) ((x)>0?(x):-(x))
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
-// #define round(x)     ((x)>=0?(long)((x)+0.5):(long)((x)-0.5))
+//#define round(x)     ((x)>=0?(long)((x)+0.5):(long)((x)-0.5))
 #define radians(deg) ((deg)*DEG_TO_RAD)
 #define degrees(rad) ((rad)*RAD_TO_DEG)
 #define sq(x) ((x)*(x))
@@ -204,7 +204,6 @@ void setup(void);
 void loop(void);
 
 void yield(void);
-
 void optimistic_yield(uint32_t interval_us);
 
 #define _PORT_GPIO16    1
@@ -276,20 +275,11 @@ long secureRandom(long);
 long secureRandom(long, long);
 long map(long, long, long, long, long);
 
-void setTZ(const char* tz);
-
 void configTime(int timezone, int daylightOffset_sec, const char* server1,
     const char* server2 = nullptr, const char* server3 = nullptr);
 
 void configTime(const char* tz, const char* server1,
     const char* server2 = nullptr, const char* server3 = nullptr);
-
-// esp32 api compatibility
-inline void configTzTime(const char* tz, const char* server1,
-    const char* server2 = nullptr, const char* server3 = nullptr)
-{
-    configTime(tz, server1, server2, server3);
-}
 
 #endif // __cplusplus
 
